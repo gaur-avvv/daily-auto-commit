@@ -5,45 +5,44 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   auto-commit:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
 
       - name: Generate commits
         run: |
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           mkdir -p .github/logs
 
-          # Always pull latest changes FIRST
-          git pull origin main
+          # Sync branch with remote
+          git fetch origin main
+          git reset --hard origin/main
 
-          # Random commits (2-10)
-          COMMITS=$(( (RANDOM % 9) + 2 ))
-
+          # Random commits
+          COMMITS=$(( (RANDOM % 8) + 2 ))
           echo "Creating $COMMITS commits"
 
           for i in $(seq 1 $COMMITS)
           do
             FILE=".github/logs/activity_$RANDOM.txt"
-
-            echo "Auto activity $(date)" >> $FILE
+            echo "Activity $(date)" >> $FILE
 
             git add $FILE
-
             git commit -m "auto activity $(date +%s)"
 
-            sleep $((RANDOM % 5))
+            sleep $((RANDOM % 4))
           done
 
+          # Push safely
           git push origin main
