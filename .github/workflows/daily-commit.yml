@@ -2,7 +2,7 @@ name: Natural Contribution Generator
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: "0 * * * *"   # every hour
   workflow_dispatch:
 
 permissions:
@@ -13,36 +13,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Generate commits
+      - name: Create activity file
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
           mkdir -p .github/logs
+          echo "Activity at $(date)" >> .github/logs/activity.txt
 
-          # Sync branch with remote
-          git fetch origin main
-          git reset --hard origin/main
-
-          # Random commits
-          COMMITS=$(( (RANDOM % 8) + 2 ))
-          echo "Creating $COMMITS commits"
-
-          for i in $(seq 1 $COMMITS)
-          do
-            FILE=".github/logs/activity_$RANDOM.txt"
-            echo "Activity $(date)" >> $FILE
-
-            git add $FILE
-            git commit -m "auto activity $(date +%s)"
-
-            sleep $((RANDOM % 4))
-          done
-
-          # Push safely
-          git push origin main
+      - name: Commit and push automatically
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto: update activity log"
