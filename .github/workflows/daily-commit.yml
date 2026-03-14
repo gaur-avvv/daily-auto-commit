@@ -1,28 +1,56 @@
-name: Natural Contribution Generator
+name: Daily Auto Commit
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every hour
+    - cron: '0 */4 * * *'   # 6 runs/day instead of 1
   workflow_dispatch:
-
-permissions:
-  contents: write
+  push:
+    branches: [main]
 
 jobs:
   auto-commit:
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
 
-      - name: Create activity file
+      - name: Generate activity log
         run: |
           mkdir -p .github/logs
-          echo "Activity at $(date)" >> .github/logs/activity.txt
 
-      - name: Commit and push automatically
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "auto: update activity log"
+          # Pull some stats to make each commit unique and meaningful
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          RUN_NUM=${{ github.run_number }}
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          DAY_OF_YEAR=$(date -u '+%j')
+          WEEK=$(date -u '+%V')
+
+          # Random motivational line so content always changes
+          FACTS=(
+            "Consistency beats intensity."
+            "Small steps compound."
+            "One more green square."
+            "Keep the streak alive."
+            "Progress over perfection."
+          )
+          FACT="${FACTS[$RANDOM % ${#FACTS[@]}]}"
+
+          cat > .github/logs/activity.log << EOF
+          Last run  : $TIMESTAMP
+          Run #     : $RUN_NUM
+          Commits   : $COMMIT_COUNT total
+          Day       : $DAY_OF_YEAR / 365  (week $WEEK)
+          Note      : $FACT
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/logs/activity.log
+          git diff --staged --quiet || \
+            git commit -m "chore: activity log [$(date -u '+%Y-%m-%d %H:%M')] run #${{ github.run_number }}"
+          git push
