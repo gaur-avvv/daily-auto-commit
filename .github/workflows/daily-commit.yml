@@ -2,12 +2,11 @@ name: Natural Contribution Generator
 
 on:
   schedule:
-    # run every hour
     - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
-  generate-activity:
+  auto-commit:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,57 +17,33 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
 
-      - name: Generate natural commits
+      - name: Generate commits
         run: |
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          mkdir -p .github/activity
+          mkdir -p .github/logs
 
-          # Random chance of no activity (natural gaps)
-          ACTIVE_DAY=$((RANDOM % 100))
+          # Always pull latest changes FIRST
+          git pull origin main
 
-          if [ $ACTIVE_DAY -lt 30 ]; then
-            echo "Rest day - no commits"
-            exit 0
-          fi
-
-          # Random number of commits (2–20)
-          COMMITS=$(( (RANDOM % 18) + 2 ))
+          # Random commits (2-10)
+          COMMITS=$(( (RANDOM % 9) + 2 ))
 
           echo "Creating $COMMITS commits"
 
           for i in $(seq 1 $COMMITS)
           do
-            FILE=".github/activity/activity_$RANDOM.txt"
+            FILE=".github/logs/activity_$RANDOM.txt"
 
-            echo "Activity $(date -u '+%Y-%m-%d %H:%M:%S UTC') $RANDOM" >> $FILE
+            echo "Auto activity $(date)" >> $FILE
 
             git add $FILE
 
-            MSGS=(
-              "update docs"
-              "refactor module"
-              "fix minor bug"
-              "improve logging"
-              "update configs"
-              "cleanup code"
-              "improve performance"
-              "update dependencies"
-              "minor improvements"
-              "fix lint issues"
-            )
+            git commit -m "auto activity $(date +%s)"
 
-            MSG=${MSGS[$RANDOM % ${#MSGS[@]}]}
-
-            git commit -m "$MSG"
-
-            sleep $((RANDOM % 10))
-
+            sleep $((RANDOM % 5))
           done
-
-          # pull latest repo changes before push
-          git pull --rebase origin main
 
           git push origin main
