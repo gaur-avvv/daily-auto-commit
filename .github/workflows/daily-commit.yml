@@ -2,10 +2,8 @@ name: Daily Auto Commit
 
 on:
   schedule:
-    - cron: '0 */4 * * *'   # 6 runs/day instead of 1
+    - cron: '0 */4 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   auto-commit:
@@ -21,14 +19,12 @@ jobs:
         run: |
           mkdir -p .github/logs
 
-          # Pull some stats to make each commit unique and meaningful
           COMMIT_COUNT=$(git rev-list --count HEAD)
           RUN_NUM=${{ github.run_number }}
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
           DAY_OF_YEAR=$(date -u '+%j')
           WEEK=$(date -u '+%V')
 
-          # Random motivational line so content always changes
           FACTS=(
             "Consistency beats intensity."
             "Small steps compound."
@@ -53,4 +49,5 @@ jobs:
           git add .github/logs/activity.log
           git diff --staged --quiet || \
             git commit -m "chore: activity log [$(date -u '+%Y-%m-%d %H:%M')] run #${{ github.run_number }}"
+          git pull --rebase origin main
           git push
