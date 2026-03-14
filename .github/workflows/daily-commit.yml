@@ -2,7 +2,7 @@ name: Natural Contribution Generator
 
 on:
   schedule:
-    # Run every hour
+    # run every hour
     - cron: '0 * * * *'
   workflow_dispatch:
 
@@ -11,10 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
 
       - name: Generate natural commits
         run: |
@@ -24,7 +26,7 @@ jobs:
 
           mkdir -p .github/activity
 
-          # Random chance to skip activity (creates natural gaps)
+          # Random chance of no activity (natural gaps)
           ACTIVE_DAY=$((RANDOM % 100))
 
           if [ $ACTIVE_DAY -lt 30 ]; then
@@ -32,21 +34,19 @@ jobs:
             exit 0
           fi
 
-          # Random commit density
+          # Random number of commits (2–20)
           COMMITS=$(( (RANDOM % 18) + 2 ))
 
           echo "Creating $COMMITS commits"
 
           for i in $(seq 1 $COMMITS)
           do
-
             FILE=".github/activity/activity_$RANDOM.txt"
 
-            echo "Activity $(date -u '+%Y-%m-%d %H:%M:%S UTC') - $RANDOM" >> $FILE
+            echo "Activity $(date -u '+%Y-%m-%d %H:%M:%S UTC') $RANDOM" >> $FILE
 
             git add $FILE
 
-            # Random commit message
             MSGS=(
               "update docs"
               "refactor module"
@@ -64,8 +64,11 @@ jobs:
 
             git commit -m "$MSG"
 
-            sleep $((RANDOM % 20))
+            sleep $((RANDOM % 10))
 
           done
 
-          git push
+          # pull latest repo changes before push
+          git pull --rebase origin main
+
+          git push origin main
