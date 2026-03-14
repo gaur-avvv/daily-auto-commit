@@ -1,28 +1,71 @@
-name: Daily Auto Commit
+name: Natural Contribution Generator
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # Run every hour
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
-  auto-commit:
+  generate-activity:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Update activity log
+      - name: Generate natural commits
         run: |
-          mkdir -p .github/logs
-          echo "Last auto-commit: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > .github/logs/activity.log
 
-      - name: Commit and push changes
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/logs/activity.log
-          git diff --staged --quiet || git commit -m "chore: daily automated commit [$(date -u '+%Y-%m-%d')]"
+
+          mkdir -p .github/activity
+
+          # Random chance to skip activity (creates natural gaps)
+          ACTIVE_DAY=$((RANDOM % 100))
+
+          if [ $ACTIVE_DAY -lt 30 ]; then
+            echo "Rest day - no commits"
+            exit 0
+          fi
+
+          # Random commit density
+          COMMITS=$(( (RANDOM % 18) + 2 ))
+
+          echo "Creating $COMMITS commits"
+
+          for i in $(seq 1 $COMMITS)
+          do
+
+            FILE=".github/activity/activity_$RANDOM.txt"
+
+            echo "Activity $(date -u '+%Y-%m-%d %H:%M:%S UTC') - $RANDOM" >> $FILE
+
+            git add $FILE
+
+            # Random commit message
+            MSGS=(
+              "update docs"
+              "refactor module"
+              "fix minor bug"
+              "improve logging"
+              "update configs"
+              "cleanup code"
+              "improve performance"
+              "update dependencies"
+              "minor improvements"
+              "fix lint issues"
+            )
+
+            MSG=${MSGS[$RANDOM % ${#MSGS[@]}]}
+
+            git commit -m "$MSG"
+
+            sleep $((RANDOM % 20))
+
+          done
+
           git push
