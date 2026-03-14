@@ -46,8 +46,8 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
           git add .github/logs/activity.log
           git diff --staged --quiet || \
             git commit -m "chore: activity log [$(date -u '+%Y-%m-%d %H:%M')] run #${{ github.run_number }}"
-          git pull --rebase origin main
           git push
